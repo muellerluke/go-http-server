@@ -1,13 +1,17 @@
-package server
+package main
 
 import (
-	"fmt"
+	"log"
+	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
 func main() {
-	r := mux.NewRouter()
-	r.HandleFunc("/", HomeHandler)
-	fmt.Println("Calling cmd.Execute()!")
+	router := mux.NewRouter()
+	router.HandleFunc("/api/file-upload", FileUploadHandler).Methods("POST")
+	router.HandleFunc("/api/{apiSlug}", ApiHandler)
+	router.HandleFunc("/{pageSlug}", PageHandler).Methods("GET")
+	http.ListenAndServe(":80", router)
+	log.Println("Listening on port 80")
 }
