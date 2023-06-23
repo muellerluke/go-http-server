@@ -9,7 +9,7 @@ import (
 
 func main() {
 	router := mux.NewRouter()
-	router.HandleFunc("/api/file-upload", FileUploadHandler).Methods("POST")
+	router.HandleFunc("/api/file-upload", VideoUploadHandler).Methods("POST")
 	router.HandleFunc("/api/{apiSlug}", ApiHandler)
 	router.HandleFunc("/{pageSlug}", PageHandler).Methods("GET")
 	http.ListenAndServe(":80", router)
