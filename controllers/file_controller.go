@@ -1,41 +1,30 @@
-package main
+package controllers
 
 import (
+	"go-http-server/responses"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/gofiber/fiber/v2"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 )
 
-func VideoUploadHandler(w http.ResponseWriter, r *http.Request) {
-	// Parse our multipart form, 10 << 20 specifies a maximum
-	// upload of 10 MB files.
-	r.ParseMultipartForm(32 << 20)
-	// FormFile returns the first file for the given key `myFile`
-	// it also returns the FileHeader so we can get the Filename,
-	// the Header and the size of the file
-	file, handler, err := r.FormFile("file")
+func UploadHandler(c *fiber.Ctx) error {
+	file, err := c.FormFile("file")
 
 	if err != nil {
 		log.Println("Error Retrieving the File")
 		log.Println(err)
-		return
+		return c.Status(http.StatusBadRequest).JSON(responses.UserResponse{Status: http.StatusBadRequest, Message: "error", Data: &fiber.Map{"data": "Error Retrieving the File"}})
 	}
 
 	//verify file type
-	fileTypeAcceptable := handler.Header.Get("Content-Type") == "video/mp4"
-
-	if !fileTypeAcceptable {
-		log.Println("File type not acceptable")
-		return
+	if file.Header.Get("Content-Type") != "video/mp4" {
+		log.Println("Invalid file type uploaded")
+		return c.Status(http.StatusBadRequest).JSON(responses.UserResponse{Status: http.StatusBadRequest, Message: "error", Data: &fiber.Map{"data": "Invalid file type uploaded"}})
 	}
-
-	defer file.Close()
-	log.Printf("Uploaded File: %+v\n", handler.Filename)
-	log.Printf("File Size: %+v\n", handler.Size)
-	log.Printf("MIME Header: %+v\n", handler.Header)
 
 	// Create a temporary file within our temp-images directory that follows
 	// a particular naming pattern
@@ -47,12 +36,17 @@ func VideoUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	tempFileName := tempFile.Name()
 
-	// read all of the contents of our uploaded file into a
-	// byte array
-	fileBytes, err := ioutil.ReadAll(file)
+	// This will copy the uploaded file to the temp file created
+	fileContent, err := file.Open()
+
+	// read all of the contents of our uploaded file into a byte array
+	fileBytes, err := ioutil.ReadAll(fileContent)
+
 	if err != nil {
 		log.Println(err)
+		return c.Status(http.StatusBadRequest).JSON(responses.UserResponse{Status: http.StatusBadRequest, Message: "error", Data: &fiber.Map{"data": "Error Retrieving the File"}})
 	}
+
 	// write this byte array to our temporary file
 	tempFile.Write(fileBytes)
 
@@ -69,5 +63,5 @@ func VideoUploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// return that we have successfully uploaded our file!
-	log.Println("Successfully Uploaded File")
+	return c.Status(http.StatusOK).JSON(responses.UserResponse{Status: http.StatusOK, Message: "success", Data: &fiber.Map{"data": "Successfully Uploaded File"}})
 }
